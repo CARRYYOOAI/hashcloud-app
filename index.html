@@ -129,6 +129,12 @@ input,select,textarea{max-width:100%;font-size:16px}
  .stats-grid,.quick-action-grid,.telemetry-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
  .dialog{max-height:calc(100dvh - 36px - env(safe-area-inset-top,24px) - env(safe-area-inset-bottom,20px));overflow:auto;overscroll-behavior:contain}
 }
+
+/* Refined native mobile density and locked icon geometry */
+@media(max-width:680px){.shell{max-width:480px;margin:0 auto;padding-left:16px;padding-right:16px}.hero{min-height:0}.card{padding:14px}.wallet .metric{font-size:30px;line-height:1.2;letter-spacing:-.6px}.wallet-actions{gap:8px;margin-top:14px}.wallet-actions .btn{padding:8px 10px}.quick-actions{margin:12px 0}.quick-action-grid{gap:8px;margin-top:10px}.quick-action{padding:10px 6px}.stats-grid{gap:8px;margin:10px 0}.stat-card{padding:11px}.pagehead{margin-bottom:14px}.section-heading{margin-top:16px}.grid{gap:10px}}
+.brand-mark,.hash-icon,.quick-icon,.security-mark,.stepnum,.icon-button,.stat-icon,.announcement-icon,.event-symbol,.event-orbit,.coin,.network-orb,.orb-core,.orb-node,.bottomnav button span:first-child{flex-shrink:0}
+.brand-mark,.hash-icon,.quick-icon,.security-mark,.stepnum,.icon-button{aspect-ratio:1/1}
+img{max-width:100%;height:auto;object-fit:contain}
 </style></head>
 <body><div class="shell"><header class="topbar"><a class="brand" href="#" onclick="showPage(0);return false"><span class="brand-mark">H</span><span>HASH <em>CLOUD</em><small class="brand-sub">CARRYYOO</small></span></a><nav class="topnav" id="topnav"></nav><div class="righttop"><span class="badge-live"><i class="live-dot"></i>网络连接正常</span><button class="icon-button" aria-label="查看通知" onclick="window.openAdminConsole()" aria-label="管理员入口" title="管理员入口">♧<i class="notification-dot"></i></button><div class="auth-actions" id="auth-actions"></div></div></header><main id="app"></main><div class="footer-note">HASHFORGE 算力云控制台 · 交互原型</div></div><nav class="bottomnav" id="bottomnav"></nav><div class="modal" id="modal" onclick="if(event.target===this)window.closeModal()"><div class="dialog" id="dialog"></div></div><div class="toast" id="toast"></div>
 <script>
