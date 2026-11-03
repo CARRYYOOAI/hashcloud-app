@@ -21,41 +21,41 @@ jobs:
           distribution: 'zulu'
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
-      - name: Accept Android Licenses
-        run: |
-          mkdir -p "$ANDROID_HOME/licenses" || true
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
-          yes | sdkmanager --licenses || true
+      # The prior successful run used sdkmanager license acceptance with
+      # a non-fatal exit. Do not rely on undocumented license-hash injection.
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
 
-      - name: Build APK
+      - name: Build APK with Capacitor 6
         run: |
           npm init -y
-          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/android@^6.0.0
-          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
+          npm install --save-exact @capacitor/core@6.2.1 @capacitor/cli@6.2.1 @capacitor/android@6.2.1
           mkdir -p www
           cp index.html www/index.html
+          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
           npx cap add android
           npx cap sync android
+
+      - name: Inject custom launcher icon when present
+        run: |
           if [ -f icon.png ]; then
-            echo "Injecting custom app icon..."
-            for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-              target="android/app/src/main/res/$dir"
+            for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+              target="android/app/src/main/res/mipmap-${density}"
               mkdir -p "$target"
               cp icon.png "$target/ic_launcher.png"
               cp icon.png "$target/ic_launcher_round.png"
               cp icon.png "$target/ic_launcher_foreground.png"
             done
           fi
-          cd android
-          chmod +x ./gradlew
-          ./gradlew assembleDebug
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
 
       - uses: actions/upload-artifact@v4
         with:
           name: HASH-CLOUD-Android-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
