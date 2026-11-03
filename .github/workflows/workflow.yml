@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 21
+          java-version: 17
 
       - name: Accept Android Licenses
         run: |
@@ -28,7 +28,7 @@ jobs:
       - name: Build APK
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/android@^6.0.0
           npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
           mkdir -p www
           cp index.html www/index.html
