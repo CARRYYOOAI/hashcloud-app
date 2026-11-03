@@ -1,1 +1,0 @@
-# hashcloud-app
