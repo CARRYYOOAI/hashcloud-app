@@ -10,43 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
-      - name: Accept Android Licenses
+      - name: Accept Android SDK Licenses
+        shell: bash
         run: |
-          if ! command -v sdkmanager >/dev/null 2>&1; then
-            echo "sdkmanager was not found in PATH after Android SDK setup." >&2
-            exit 1
-          fi
-          yes | sdkmanager --licenses || true
+          set -euo pipefail
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf '%s\n' \
+            "24333f8a63b6825ea9c5514f83c2829b004d1fee" \
+            "d56f5187479451eabf01fb78af6dfcb131a6481e" \
+            > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf '%s\n' \
+            "84831b9409646a918e30573bab4c9c91346d8abd" \
+            > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
-      - name: Build APK with Capacitor 6
+      - name: Build APK
+        shell: bash
         run: |
+          set -euo pipefail
           npm init -y
-          npm install --save-exact @capacitor/core@6.2.1 @capacitor/cli@6.2.1 @capacitor/android@6.2.1
+          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/android@^6.0.0
+          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
           mkdir -p www
           cp index.html www/index.html
-          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Inject custom launcher icon when present
-        run: |
+          # Capacitor Android launcher resources live under android/app/src/main/res.
+          # Copy while still at the repository root so the destination path is correct.
           if [ -f icon.png ]; then
             echo "Injecting custom app icon..."
             for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
@@ -60,14 +64,11 @@ jobs:
             echo "No root icon.png found; keeping the default Capacitor app icon."
           fi
 
-      - name: Assemble debug APK
-        run: |
           cd android
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleDebug
 
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: HASH-CLOUD-Android-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
