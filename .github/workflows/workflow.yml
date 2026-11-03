@@ -21,19 +21,31 @@ jobs:
           distribution: 'zulu'
           java-version: 17
 
-      - name: Accept Android Licenses
-        run: |
-          yes | sdkmanager --licenses || true
+      - uses: android-actions/setup-android@v3
 
       - name: Build APK
         run: |
           npm init -y
-          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/android@^6.0.0
+          npm install @capacitor/core@^6 @capacitor/cli@^6 @capacitor/android@^6
           npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
           mkdir -p www
           cp index.html www/index.html
           npx cap add android
           npx cap sync android
+
+          if [ -f icon.png ]; then
+            echo "Injecting custom app icon..."
+            for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+              target="android/app/src/main/res/$dir"
+              mkdir -p "$target"
+              cp icon.png "$target/ic_launcher.png"
+              cp icon.png "$target/ic_launcher_round.png"
+              cp icon.png "$target/ic_launcher_foreground.png"
+            done
+          else
+            echo "No root icon.png found; keeping the default Capacitor app icon."
+          fi
+
           cd android
           chmod +x ./gradlew
           ./gradlew assembleDebug
