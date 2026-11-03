@@ -1,0 +1,61 @@
+name: Build-APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      # The prior successful run used sdkmanager license acceptance with
+      # a non-fatal exit. Do not rely on undocumented license-hash injection.
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Build APK with Capacitor 6
+        run: |
+          npm init -y
+          npm install --save-exact @capacitor/core@6.2.1 @capacitor/cli@6.2.1 @capacitor/android@6.2.1
+          mkdir -p www
+          cp index.html www/index.html
+          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: Inject custom launcher icon when present
+        run: |
+          if [ -f icon.png ]; then
+            for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+              target="android/app/src/main/res/mipmap-${density}"
+              mkdir -p "$target"
+              cp icon.png "$target/ic_launcher.png"
+              cp icon.png "$target/ic_launcher_round.png"
+              cp icon.png "$target/ic_launcher_foreground.png"
+            done
+          fi
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HASH-CLOUD-Android-App
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
