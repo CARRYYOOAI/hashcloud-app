@@ -10,33 +10,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: 17
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Accept Android Licenses
         run: |
+          if ! command -v sdkmanager >/dev/null 2>&1; then
+            echo "sdkmanager was not found in PATH after Android SDK setup." >&2
+            exit 1
+          fi
           yes | sdkmanager --licenses || true
 
-      - name: Build APK
+      - name: Build APK with Capacitor 6
         run: |
           npm init -y
-          npm install @capacitor/core@^6.0.0 @capacitor/cli@^6.0.0 @capacitor/android@^6.0.0
-          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
+          npm install --save-exact @capacitor/core@6.2.1 @capacitor/cli@6.2.1 @capacitor/android@6.2.1
           mkdir -p www
           cp index.html www/index.html
+          npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
           npx cap add android
           npx cap sync android
-          cd android
-          chmod +x ./gradlew
+
+      - name: Inject custom launcher icon when present
+        run: |
           if [ -f icon.png ]; then
+            echo "Injecting custom app icon..."
             for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
               target="android/app/src/main/res/$dir"
               mkdir -p "$target"
@@ -44,12 +56,19 @@ jobs:
               cp icon.png "$target/ic_launcher_round.png"
               cp icon.png "$target/ic_launcher_foreground.png"
             done
+          else
+            echo "No root icon.png found; keeping the default Capacitor app icon."
           fi
-          ./gradlew assembleDebug
 
-      - uses: actions/upload-artifact@v4
+      - name: Assemble debug APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
         with:
           name: HASH-CLOUD-Android-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
-YAML. GitHub Actions workflow for building an Android APK using Capacitor and Gradle.
+          if-no-files-found: error
