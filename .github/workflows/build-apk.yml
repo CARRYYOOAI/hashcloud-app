@@ -1,5 +1,8 @@
 name: Build-APK
-'on': [push, workflow_dispatch]jobs:
+on:
+workflow_dispatch:
+push:
+branches: [main]jobs:
 build:
 runs-on: ubuntu-latest
 steps:
@@ -12,18 +15,8 @@ with:
 distribution: zulu
 java-version: 17
 - uses: android-actions/setup-android@v3
-- run: |
-npm init -y
-npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init HASHCLOUD com.hashcloud.telemetry --web-dir www
-mkdir -p www
-cp index.html www/index.html
-npx cap add android
-npx cap sync android
-cd android
-chmod +x ./gradlew
-./gradlew assembleDebug
+- run: npm init -y && npm i @capacitor/core @capacitor/cli @capacitor/android && npx cap init HASH com.hash.app --web-dir www && mkdir -p www && cp index.html www/index.html && npx cap add android && npx cap sync android && cd android && chmod +x gradlew && ./gradlew assembleDebug
 - uses: actions/upload-artifact@v4
 with:
-name: HASH-CLOUD-Android-App
+name: HASH-CLOUD-App
 path: android/app/build/outputs/apk/debug/app-debug.apk
